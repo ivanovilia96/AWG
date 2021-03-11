@@ -8,15 +8,21 @@ import (
 	"time"
 )
 
+// возвращает числа от 1 до 10 с интервалом от 0.5 до 3 секунд
 func getData(reciever chan float64) {
 	for {
 		var sleepingTimeSeconds int
-		sleepingTimeMiliseconds := rand.Intn(1001)
+		sleepingTimeMiliseconds := rand.Intn(1000)
 		// если sleepingTimeMilisec выпало как 0, то 3 секунды может быть, иначе максимум 2 и х mili секунд
 		if sleepingTimeMiliseconds == 0 {
 			sleepingTimeSeconds = rand.Intn(4)
 		} else {
 			sleepingTimeSeconds = rand.Intn(3)
+		}
+		
+		// устанавливает минимальное значение в пол секунды если у нас получается что оно выпало случайно менее этого времени
+		if sleepingTimeSeconds == 0 && sleepingTimeMiliseconds < 500 {
+			sleepingTimeMiliseconds = 500
 		}
 
 		// привожу к нужному типу данных
