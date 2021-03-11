@@ -10,7 +10,6 @@ import (
 
 func getData(reciever chan float64) {
 	for {
-
 		var sleepingTimeSeconds int
 		sleepingTimeMiliseconds := rand.Intn(1001)
 		// если sleepingTimeMilisec выпало как 0, то 3 секунды может быть, иначе максимум 2 и х mili секунд
