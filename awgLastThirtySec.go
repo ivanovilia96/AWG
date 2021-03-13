@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/list"
 	"fmt"
 	"math/rand"
 	"os"
@@ -46,11 +47,14 @@ func getData(reciever chan storeTimeAndData) {
 
 func main() {
 	var (
-		recieverChan                    = make(chan storeTimeAndData)
-		avgValue                        float64
-		sumOfAllDatas                   float64
-		numberElapsedSeconds            int64
-		stackOfDataForLastThirtySeconds []storeTimeAndData
+		recieverChan = make(chan storeTimeAndData)
+		avgValue     float64
+		// поле sumOfAllDatas присутствует потомучто по связанному списку итерация при получении каждого нового значения не желательна, так мы сможем
+		// оперировать связанным списком по назначению (удалять\добавлять\читать данные только в\из начала\конца)
+		sumOfAllDatas                  float64
+		// тоже самое и с этой переменной : что бы при каждом новом значении не двигаться по списку и не считать
+		numberElapsedSeconds           int64
+		listOfDataForLastThirtySeconds = list.New()
 	)
 
 	go getData(recieverChan)
@@ -72,31 +76,35 @@ func main() {
 
 			// подсчет этих секунд ведется что бы иметь возможность оперативно узнать, когда время вообще перевалило за 30 секунд и пора контроллировать стэк
 			numberElapsedSeconds += parsedDuration.Milliseconds()
-			stackOfDataForLastThirtySeconds = append(stackOfDataForLastThirtySeconds, dataAndTime)
+			listOfDataForLastThirtySeconds.PushFront(dataAndTime)
 			sumOfAllDatas += dataAndTime.data
 
 			// данный маневр мной сделан для того, что бы , если у нас пришло 2.5 сек, что является 2.5 т мс , а в начале стэка были таймеры на 500мс,
 			// то получается что стэк будет продолжать быть переполненным, (кол-во хранимых секунд будет 32 в данном случае, ну и если так дальше пойдет,
 			//	 то может храниться и 50 сек и т.д), для этого этот цикл убирает с начала элементы пока вместимость не окажется в приделах 30 т мс.
+
 			for {
 				// 30 т милисек это 30 секунд
 				if numberElapsedSeconds > 30000 {
+					println("starting")
+					// удаляем первый элемент и оперируем с его данными
+					firstElementOfList := listOfDataForLastThirtySeconds.Remove(listOfDataForLastThirtySeconds.Back()).(storeTimeAndData)
 					// парсим первый элемент в массиве( который подлежит удалению) что бы отнять от текущего времени его
-					parsedDuration, err = time.ParseDuration(stackOfDataForLastThirtySeconds[0].time.String())
+					parsedDuration, err = time.ParseDuration(firstElementOfList.time.String())
 					// отнимаем от суммы  то значение, которое выпадает по времени
-					sumOfAllDatas -= stackOfDataForLastThirtySeconds[0].data
+					sumOfAllDatas -= firstElementOfList.data
 					if err != nil {
 						panic("there is an error when parse duration which came from stored data")
 					}
 					// удаляем первый элемент т.к. для него нет места
-					stackOfDataForLastThirtySeconds = append(stackOfDataForLastThirtySeconds[:0], stackOfDataForLastThirtySeconds[1:]...)
 					numberElapsedSeconds -= parsedDuration.Milliseconds()
 				} else {
 					break
 				}
 			}
+
 			//  некий алгоритм нахождения среднего значения
-			avgValue = sumOfAllDatas / float64(len(stackOfDataForLastThirtySeconds))
+			avgValue = sumOfAllDatas / float64(listOfDataForLastThirtySeconds.Len())
 			println(dataAndTime.data, " - recieved value")
 		case <-ticker.C:
 			fmt.Println("Current awg: ", avgValue)
