@@ -86,7 +86,6 @@ func main() {
 			for {
 				// 30 т милисек это 30 секунд
 				if numberElapsedSeconds > 30000 {
-					println("starting")
 					// удаляем первый элемент и оперируем с его данными
 					firstElementOfList := listOfDataForLastThirtySeconds.Remove(listOfDataForLastThirtySeconds.Back()).(storeTimeAndData)
 					// парсим первый элемент в массиве( который подлежит удалению) что бы отнять от текущего времени его
@@ -96,7 +95,6 @@ func main() {
 					if err != nil {
 						panic("there is an error when parse duration which came from stored data")
 					}
-					// удаляем первый элемент т.к. для него нет места
 					numberElapsedSeconds -= parsedDuration.Milliseconds()
 				} else {
 					break
